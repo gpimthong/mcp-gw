@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MCP Gateway</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;
+  --green:#3fb950;--red:#f85149;--yellow:#d29922;--blue:#58a6ff;
+  --purple:#bc8cff;--cyan:#56d364;--text:#e6edf3;--muted:#8b949e;
+  --font:'Cascadia Code','JetBrains Mono','Fira Code','SF Mono',Consolas,'Courier New',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;line-height:1.5;min-height:100vh}
+
+/* Header */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+.hdr h1{font-size:14px;font-weight:700;color:var(--blue);letter-spacing:.08em;white-space:nowrap}
+.hdr .sep{color:var(--border)}
+.stat{font-size:12px;color:var(--muted);white-space:nowrap}
+.stat b{color:var(--text);font-weight:600}
+.ml{margin-left:auto}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.err{background:var(--red)}
+.dot.dim{background:var(--muted)}
+
+/* Layout */
+.main{padding:20px;max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+
+/* Section */
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--text)}
+.btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:4px;cursor:pointer;font-family:var(--font);font-size:12px;transition:all .15s}
+.btn:hover{border-color:var(--text);color:var(--text)}
+.btn.primary{background:var(--blue);color:#000;border-color:var(--blue);font-weight:700}
+.btn.primary:hover{opacity:.85}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn.sm{padding:2px 7px;font-size:11px}
+
+/* Add form */
+.add-form{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:none}
+.add-form.open{display:block}
+.form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;color:var(--muted)}
+.fg input,.fg select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-family:var(--font);font-size:12px;outline:none;width:180px}
+.fg.wide input{width:340px}
+.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.form-err{color:var(--red);font-size:12px;margin-top:8px}
+
+/* Backend cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 15px;border-left:3px solid var(--muted)}
+.card.connected{border-left-color:var(--green)}
+.card.error{border-left-color:var(--red)}
+.card.connecting{border-left-color:var(--yellow)}
+.card-hdr{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.card-name{font-weight:700;font-size:13px}
+.card-status{font-size:11px;margin-left:auto}
+.card-status.connected{color:var(--green)}
+.card-status.error{color:var(--red)}
+.card-status.connecting{color:var(--yellow)}
+.card-status.disconnected{color:var(--muted)}
+.card-url{color:var(--muted);font-size:11px;word-break:break-all;margin-bottom:8px}
+.card-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--muted)}
+.card-meta b{color:var(--text);font-weight:600}
+.card-err{color:var(--red);font-size:11px;margin-top:6px;word-break:break-word}
+.card-actions{margin-top:10px;display:flex;gap:6px}
+
+/* Log */
+.log-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.log-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.sse-dot{width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.sse-dot.live{background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.log-body{height:320px;overflow-y:auto;padding:6px 12px;font-size:12px;line-height:1.6}
+.log-body::-webkit-scrollbar{width:5px}
+.log-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.log-line{display:flex;gap:7px;padding:1px 0;border-radius:3px}
+.log-line:hover{background:rgba(255,255,255,.03)}
+.log-ts{color:var(--muted);flex-shrink:0;width:78px;font-size:11px}
+.log-lv{flex-shrink:0;font-size:10px;padding:1px 5px;border-radius:3px;line-height:16px;font-weight:600}
+.log-lv.tool_call{background:rgba(88,166,255,.18);color:var(--blue)}
+.log-lv.tool_result_ok{background:rgba(63,185,80,.18);color:var(--green)}
+.log-lv.tool_result_error{background:rgba(248,81,73,.18);color:var(--red)}
+.log-lv.backend_event{background:rgba(188,140,255,.18);color:var(--purple)}
+.log-lv.system{background:rgba(139,148,158,.15);color:var(--muted)}
+.log-msg{flex:1;color:var(--text)}
+.log-dur{color:var(--muted);flex-shrink:0;font-size:11px}
+
+/* Catalog */
+.catalog{display:flex;flex-direction:column;gap:8px}
+details.bt{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+details.bt summary{padding:9px 14px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;background:var(--surface2);list-style:none}
+details.bt summary::-webkit-details-marker{display:none}
+details.bt summary::before{content:'▶';font-size:9px;color:var(--muted);transition:transform .15s;width:10px}
+details.bt[open] summary::before{transform:rotate(90deg)}
+.bt-name{font-weight:700}
+.tools-list{padding:4px 0}
+.tool-item{padding:6px 14px 6px 28px;border-bottom:1px solid var(--border)}
+.tool-item:last-child{border-bottom:none}
+.tool-n{color:var(--blue);font-size:12px;font-weight:600}
+.tool-d{color:var(--muted);font-size:11px;margin-top:1px}
+
+/* Empty */
+.empty{color:var(--muted);font-size:12px;padding:18px;text-align:center;border:1px dashed var(--border);border-radius:6px}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="dot ok" id="gw-dot"></div>
+  <h1>MCP GATEWAY</h1>
+  <span class="sep">|</span>
+  <div class="stat">backends <b id="h-be">0</b></div>
+  <div class="stat">tools <b id="h-tools">0</b></div>
+  <div class="stat">uptime <b id="h-up">—</b></div>
+  <div class="stat" id="h-ver"></div>
+  <div class="ml stat">port <b>3000</b></div>
+</header>
+
+<main class="main">
+
+  <!-- Backends -->
+  <section>
+    <div class="sec-hdr">
+      Backends <span class="badge" id="be-cnt">0</span>
+      <button class="btn ml" onclick="toggleForm()">+ Add Backend</button>
+    </div>
+
+    <div class="add-form" id="add-form">
+      <div class="form-row">
+        <div class="fg"><label>Name (slug)</label><input id="f-name" placeholder="memory" /></div>
+        <div class="fg wide"><label>URL</label><input id="f-url" placeholder="http://container:8080/mcp" /></div>
+        <div class="fg"><label>Transport</label>
+          <select id="f-tr"><option value="http">HTTP (Streamable)</option><option value="sse">SSE (Legacy)</option></select>
+        </div>
+        <button class="btn primary" onclick="addBackend()">Connect</button>
+        <button class="btn" onclick="toggleForm()">Cancel</button>
+      </div>
+      <div class="form-err" id="form-err"></div>
+    </div>
+
+    <div class="grid" id="be-grid">
+      <div class="empty">No backends connected. Click + Add Backend to register one.</div>
+    </div>
+  </section>
+
+  <!-- Live Log -->
+  <section>
+    <div class="sec-hdr">
+      Live Request Log
+      <div class="sse-dot" id="sse-dot"></div>
+      <span class="badge" id="log-cnt">0</span>
+      <button class="btn sm ml" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="log-wrap">
+      <div class="log-body" id="log-body">
+        <div class="empty" style="border:none">Waiting for activity…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tool Catalog -->
+  <section>
+    <div class="sec-hdr">Tool Catalog <span class="badge" id="tool-cnt">0</span></div>
+    <div class="catalog" id="catalog">
+      <div class="empty">Connect backends to see available tools.</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmts = iso => iso ? new Date(iso).toLocaleTimeString('en-US',{hour12:false}) : '—';
+const fmtup = ms => { const s=Math.floor(ms/1000); if(s<60) return s+'s'; const m=Math.floor(s/60),rs=s%60; if(m<60) return m+'m '+rs+'s'; return Math.floor(m/60)+'h '+(m%60)+'m'; };
+
+let logEntries = [];
+let backends = [];
+let upStart = Date.now();
+
+// ── Health ─────────────────────────────────────────────
+async function loadHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const h = await r.json();
+    upStart = Date.now() - h.uptimeMs;
+    if (h.version) document.getElementById('h-ver').textContent = 'v' + h.version;
+  } catch {}
+}
+setInterval(() => { document.getElementById('h-up').textContent = fmtup(Date.now()-upStart); }, 1000);
+
+// ── Backends ───────────────────────────────────────────
+async function loadBackends() {
+  try {
+    const r = await fetch('/api/backends');
+    backends = await r.json();
+    renderBackends();
+  } catch {}
+}
+
+function renderBackends() {
+  document.getElementById('be-cnt').textContent = backends.length;
+  document.getElementById('h-be').textContent = backends.length;
+  const grid = document.getElementById('be-grid');
+  if (!backends.length) {
+    grid.innerHTML = '<div class="empty">No backends connected. Click + Add Backend to register one.</div>';
+    renderCatalog();
+    return;
+  }
+  grid.innerHTML = backends.map(b => `
+<div class="card ${esc(b.status)}">
+  <div class="card-hdr">
+    <div class="dot ${b.status==='connected'?'ok':b.status==='connecting'?'':'err'}"></div>
+    <span class="card-name">${esc(b.name)}</span>
+    <span class="card-status ${esc(b.status)}">${esc(b.status)}</span>
+  </div>
+  <div class="card-url">${esc(b.url)}</div>
+  <div class="card-meta">
+    <span>tools <b>${b.tools?.length??0}</b></span>
+    <span>transport <b>${esc(b.transport)}</b></span>
+    ${b.latencyMs!=null?`<span>ping <b>${b.latencyMs}ms</b></span>`:''}
+    ${b.lastPingAt?`<span>last <b>${fmts(b.lastPingAt)}</b></span>`:''}
+  </div>
+  ${b.error?`<div class="card-err">${esc(b.error)}</div>`:''}
+  <div class="card-actions">
+    <button class="btn sm danger" onclick="removeBackend('${esc(b.name)}')">Remove</button>
+    <button class="btn sm" onclick="reconnect('${esc(b.name)}')">Reconnect</button>
+  </div>
+</div>`).join('');
+  renderCatalog();
+}
+
+function renderCatalog() {
+  const connected = backends.filter(b=>b.status==='connected'&&b.tools?.length>0);
+  const total = backends.reduce((s,b)=>s+(b.tools?.length??0),0);
+  document.getElementById('tool-cnt').textContent = total;
+  document.getElementById('h-tools').textContent = total;
+  const cat = document.getElementById('catalog');
+  if (!connected.length) { cat.innerHTML='<div class="empty">Connect backends to see available tools.</div>'; return; }
+  cat.innerHTML = connected.map(b=>`
+<details class="bt">
+  <summary>
+    <span class="dot ok"></span>
+    <span class="bt-name">${esc(b.name)}</span>
+    <span class="badge" style="margin-left:8px">${b.tools.length}</span>
+    <span style="margin-left:auto;color:var(--muted);font-size:11px">${esc(b.url)}</span>
+  </summary>
+  <div class="tools-list">${b.tools.map(t=>`
+    <div class="tool-item">
+      <div class="tool-n">${esc(b.name)}__${esc(t.name)}</div>
+      ${t.description?`<div class="tool-d">${esc(t.description)}</div>`:''}
+    </div>`).join('')}
+  </div>
+</details>`).join('');
+}
+
+// ── Backends actions ────────────────────────────────────
+function toggleForm() {
+  const f=document.getElementById('add-form');
+  f.classList.toggle('open');
+  if(f.classList.contains('open')) document.getElementById('f-name').focus();
+  document.getElementById('form-err').textContent='';
+}
+
+async function addBackend() {
+  const name=document.getElementById('f-name').value.trim();
+  const url=document.getElementById('f-url').value.trim();
+  const transport=document.getElementById('f-tr').value;
+  const errEl=document.getElementById('form-err');
+  if(!name||!url){errEl.textContent='Name and URL are required';return;}
+  errEl.textContent='';
+  try {
+    const r=await fetch('/api/backends',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,url,transport,enabled:true})});
+    const d=await r.json();
+    if(!r.ok){errEl.textContent=d.error||'Failed';return;}
+    document.getElementById('f-name').value='';
+    document.getElementById('f-url').value='';
+    toggleForm();
+    await loadBackends();
+  } catch(e){errEl.textContent='Network error: '+e.message;}
+}
+
+async function removeBackend(name) {
+  if(!confirm(`Remove backend "${name}"?`))return;
+  await fetch(`/api/backends/${encodeURIComponent(name)}`,{method:'DELETE'});
+  await loadBackends();
+}
+
+async function reconnect(name) {
+  await fetch(`/api/backends/${encodeURIComponent(name)}/reconnect`,{method:'POST'});
+  await loadBackends();
+}
+
+// ── Log ─────────────────────────────────────────────────
+function lvClass(e) {
+  if(e.type==='tool_call') return 'tool_call';
+  if(e.type==='tool_result') return e.status==='error'?'tool_result_error':'tool_result_ok';
+  if(e.type==='backend_event') return 'backend_event';
+  return 'system';
+}
+function lvLabel(e) {
+  if(e.type==='tool_call') return 'CALL';
+  if(e.type==='tool_result') return e.status==='error'?'ERR':'OK';
+  if(e.type==='backend_event') return 'BACKEND';
+  return 'SYS';
+}
+function renderLine(e) {
+  return `<div class="log-line"><span class="log-ts">${fmts(e.ts)}</span><span class="log-lv ${lvClass(e)}">${lvLabel(e)}</span><span class="log-msg">${esc(e.message)}</span>${e.durationMs!=null?`<span class="log-dur">${e.durationMs}ms</span>`:''}</div>`;
+}
+
+function renderLog() {
+  document.getElementById('log-cnt').textContent=logEntries.length;
+  const body=document.getElementById('log-body');
+  if(!logEntries.length){body.innerHTML='<div class="empty" style="border:none">Waiting for activity…</div>';return;}
+  body.innerHTML=[...logEntries].reverse().map(renderLine).join('');
+}
+
+function appendLine(e) {
+  logEntries.push(e);
+  if(logEntries.length>100) logEntries.shift();
+  document.getElementById('log-cnt').textContent=logEntries.length;
+  const body=document.getElementById('log-body');
+  const empty=body.querySelector('.empty');
+  if(empty) body.innerHTML='';
+  body.insertAdjacentHTML('afterbegin',renderLine(e));
+  while(body.children.length>100) body.removeChild(body.lastChild);
+}
+
+function clearLog(){logEntries=[];document.getElementById('log-cnt').textContent='0';document.getElementById('log-body').innerHTML='<div class="empty" style="border:none">Cleared.</div>';}
+
+// ── SSE ─────────────────────────────────────────────────
+function startSSE() {
+  const dot=document.getElementById('sse-dot');
+  const es=new EventSource('/api/logs/stream');
+  es.onopen=()=>dot.classList.add('live');
+  es.onmessage=e=>{try{appendLine(JSON.parse(e.data));}catch{}};
+  es.onerror=()=>dot.classList.remove('live');
+}
+
+// ── Init ─────────────────────────────────────────────────
+(async()=>{
+  await loadHealth();
+  const r=await fetch('/api/logs');
+  const d=await r.json();
+  logEntries=(d.entries||[]).slice(-100);
+  renderLog();
+  await loadBackends();
+  startSSE();
+  setInterval(loadBackends,15000);
+})();
+</script>
+</body>
+</html>

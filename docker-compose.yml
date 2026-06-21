@@ -1,0 +1,24 @@
+networks:
+  mcp-gw-net:
+    driver: bridge
+    name: mcp-gw-net
+
+services:
+  mcp-gateway:
+    build: .
+    container_name: mcp-gateway
+    networks:
+      - mcp-gw-net
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - CONFIG_PATH=/app/config/backends.json
+      - PORT=3000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
