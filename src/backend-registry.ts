@@ -28,9 +28,10 @@ export class BackendRegistry {
 
     try {
       const client = new Client(CLIENT_INFO, { capabilities: {} });
+      const headers = config.headers ?? {};
       const transport = config.transport === 'sse'
-        ? new SSEClientTransport(new URL(config.url))
-        : new StreamableHTTPClientTransport(new URL(config.url));
+        ? new SSEClientTransport(new URL(config.url), { requestInit: { headers } })
+        : new StreamableHTTPClientTransport(new URL(config.url), { requestInit: { headers } });
 
       await client.connect(transport);
       state.client = client;

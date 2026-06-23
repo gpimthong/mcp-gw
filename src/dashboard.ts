@@ -38,7 +38,7 @@ export function createApp(registry: BackendRegistry, aggregator: ToolAggregator)
 
   app.post('/api/backends', (req, res) => {
     void (async () => {
-      const { name, url, transport } = req.body as Partial<BackendConfig>;
+      const { name, url, transport, headers } = req.body as Partial<BackendConfig>;
       if (!name || !url || !transport) {
         res.status(400).json({ error: 'name, url, transport are required' }); return;
       }
@@ -49,7 +49,7 @@ export function createApp(registry: BackendRegistry, aggregator: ToolAggregator)
         res.status(400).json({ error: 'transport must be http or sse' }); return;
       }
 
-      const config: BackendConfig = { name, url, transport, enabled: true };
+      const config: BackendConfig = { name, url, transport, enabled: true, ...(headers && { headers }) };
       await registry.connect(config);
 
       const all = loadBackends();

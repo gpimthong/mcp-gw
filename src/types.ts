@@ -8,6 +8,7 @@ export interface BackendConfig {
   url: string;
   transport: 'http' | 'sse';
   enabled: boolean;
+  headers?: Record<string, string>;
 }
 
 export interface BackendState extends BackendConfig {
