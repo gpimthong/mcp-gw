@@ -13,8 +13,10 @@ services:
       - "3000:3000"
     volumes:
       - ./config:/app/config
+      - ./data:/app/data
     environment:
       - CONFIG_PATH=/app/config/backends.json
+      - RAG_DATA_DIR=/app/data
       - PORT=3000
     restart: unless-stopped
     healthcheck:

@@ -1,19 +1,30 @@
 import { BackendRegistry } from './backend-registry.js';
 import { ToolAggregator } from './tool-aggregator.js';
+import { RagManager } from './rag/manager.js';
+import { setCacheDir } from './rag/embedder.js';
+import { setDataDir } from './rag/store.js';
 import { createApp } from './dashboard.js';
 import { mountMcpRoutes } from './mcp-server.js';
 import { loadBackends } from './config.js';
 import { logger } from './logger.js';
 import { VERSION } from './version.js';
+import { join } from 'path';
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10);
+const DATA_DIR = process.env.RAG_DATA_DIR ?? join(process.cwd(), 'data');
 
 async function main(): Promise<void> {
   logger.system(`MCP Gateway v${VERSION} starting…`);
 
+  setCacheDir(DATA_DIR);
+  setDataDir(join(DATA_DIR, 'rag'));
+
   const registry = new BackendRegistry();
-  const aggregator = new ToolAggregator(registry);
-  const app = createApp(registry, aggregator);
+  const rag = new RagManager();
+  await rag.init();
+
+  const aggregator = new ToolAggregator(registry, rag);
+  const app = createApp(registry, aggregator, rag);
   mountMcpRoutes(app, aggregator);
 
   const saved = loadBackends().filter(b => b.enabled);

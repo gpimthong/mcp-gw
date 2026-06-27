@@ -1,14 +1,19 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { BackendRegistry } from './backend-registry.js';
+import type { RagManager } from './rag/manager.js';
 import { logger } from './logger.js';
 
 const SEP = '__';
 
 export class ToolAggregator {
-  constructor(private registry: BackendRegistry) {}
+  constructor(
+    private registry: BackendRegistry,
+    private rag: RagManager,
+  ) {}
 
   listAllTools(): Tool[] {
     const tools: Tool[] = [];
+
     for (const { name: backend, tools: backendTools } of this.registry.getAllConnected()) {
       for (const tool of backendTools) {
         tools.push({
@@ -18,10 +23,17 @@ export class ToolAggregator {
         });
       }
     }
+
+    tools.push(...this.rag.getTools());
+
     return tools;
   }
 
   async callTool(prefixedName: string, args: Record<string, unknown> | undefined): Promise<unknown> {
+    if (this.rag.isRagTool(prefixedName)) {
+      return this.rag.callTool(prefixedName, args ?? {});
+    }
+
     const sepIdx = prefixedName.indexOf(SEP);
     if (sepIdx === -1) throw new Error(`Invalid tool name (missing "__" prefix): ${prefixedName}`);
 

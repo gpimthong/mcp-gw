@@ -38,6 +38,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .btn.primary:hover{opacity:.85}
 .btn.danger:hover{border-color:var(--red);color:var(--red)}
 .btn.sm{padding:2px 7px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* Add form */
 .add-form{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:none}
@@ -45,9 +46,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .fg{display:flex;flex-direction:column;gap:4px}
 .fg label{font-size:11px;color:var(--muted)}
-.fg input,.fg select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-family:var(--font);font-size:12px;outline:none;width:180px}
-.fg.wide input{width:340px}
-.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.fg input,.fg select,.fg textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:4px;font-family:var(--font);font-size:12px;outline:none}
+.fg input,.fg select{width:180px}
+.fg.wide input,.fg.wide textarea{width:340px}
+.fg textarea{width:340px;resize:vertical;min-height:80px}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
 .form-err{color:var(--red);font-size:12px;margin-top:8px}
 
 /* Backend cards */
@@ -106,6 +109,47 @@ details.bt[open] summary::before{transform:rotate(90deg)}
 
 /* Empty */
 .empty{color:var(--muted);font-size:12px;padding:18px;text-align:center;border:1px dashed var(--border);border-radius:6px}
+
+/* ── RAG ─────────────────────────────────────────────── */
+.rag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.rag-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 15px;border-left:3px solid var(--purple)}
+.rag-card-hdr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.rag-card-name{font-weight:700;font-size:13px;color:var(--purple)}
+.rag-card-desc{color:var(--muted);font-size:11px;margin-bottom:8px}
+.rag-card-meta{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-bottom:10px}
+.rag-card-meta b{color:var(--text);font-weight:600}
+.rag-tool-name{font-size:11px;color:var(--blue);background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);border-radius:3px;padding:2px 6px;margin-bottom:10px;word-break:break-all}
+
+/* Tabs */
+.tab-bar{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:var(--font);font-size:12px;padding:5px 12px;margin-bottom:-1px}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Doc list inside RAG card */
+.doc-list{margin-top:8px;border-top:1px solid var(--border);padding-top:8px;display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto}
+.doc-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0}
+.doc-item-src{color:var(--muted);flex-shrink:0;font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+.doc-item-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-item-chunks{color:var(--muted);flex-shrink:0}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center}
+.modal-backdrop.hidden{display:none}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative}
+.modal h3{font-size:14px;color:var(--text);margin-bottom:14px}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;font-family:var(--font)}
+.modal-close:hover{color:var(--text)}
+
+/* Query panel */
+.query-out{margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-size:11px;line-height:1.7;max-height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.query-result{border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:8px}
+.query-result:last-child{border-bottom:none;margin-bottom:0}
+.query-result-hdr{color:var(--blue);font-size:11px;font-weight:600;margin-bottom:3px}
+.query-result-text{color:var(--text)}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -148,6 +192,29 @@ details.bt[open] summary::before{transform:rotate(90deg)}
     </div>
   </section>
 
+  <!-- Knowledge Bases (RAG) -->
+  <section>
+    <div class="sec-hdr">
+      Knowledge Bases <span class="badge" id="rag-cnt">0</span>
+      <button class="btn ml" onclick="toggleRagForm()">+ New KB</button>
+    </div>
+
+    <div class="add-form" id="rag-form">
+      <div class="form-row">
+        <div class="fg"><label>ID (slug)</label><input id="rf-id" placeholder="homelab-docs" /></div>
+        <div class="fg wide"><label>Display Name</label><input id="rf-name" placeholder="Homelab Documentation" /></div>
+        <div class="fg wide"><label>Description (shown in tool)</label><input id="rf-desc" placeholder="Documentation for my homelab setup." /></div>
+        <button class="btn primary" onclick="createKb()">Create</button>
+        <button class="btn" onclick="toggleRagForm()">Cancel</button>
+      </div>
+      <div class="form-err" id="rag-form-err"></div>
+    </div>
+
+    <div class="rag-grid" id="rag-grid">
+      <div class="empty">No knowledge bases. Click + New KB to create one.</div>
+    </div>
+  </section>
+
   <!-- Live Log -->
   <section>
     <div class="sec-hdr">
@@ -167,11 +234,65 @@ details.bt[open] summary::before{transform:rotate(90deg)}
   <section>
     <div class="sec-hdr">Tool Catalog <span class="badge" id="tool-cnt">0</span></div>
     <div class="catalog" id="catalog">
-      <div class="empty">Connect backends to see available tools.</div>
+      <div class="empty">Connect backends or create knowledge bases to see available tools.</div>
     </div>
   </section>
 
 </main>
+
+<!-- Add Document Modal -->
+<div class="modal-backdrop hidden" id="add-doc-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDocModal()">✕</button>
+    <h3 id="modal-title">Add Document</h3>
+
+    <div id="replace-banner" style="display:none;background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);border-radius:4px;padding:6px 10px;font-size:11px;color:var(--purple);margin-bottom:12px"></div>
+
+    <div class="tab-bar">
+      <button class="tab active" data-tab="paste" onclick="switchTab(event,'paste')">Paste Text</button>
+      <button class="tab" data-tab="url" onclick="switchTab(event,'url')">URL</button>
+      <button class="tab" data-tab="upload" onclick="switchTab(event,'upload')">File Upload</button>
+    </div>
+
+    <!-- Paste tab -->
+    <div class="tab-panel active" id="tab-paste">
+      <div class="form-row" style="flex-direction:column;gap:8px">
+        <div class="fg wide"><label>Title</label><input id="doc-paste-title" placeholder="My Document" /></div>
+        <div class="fg wide"><label>Content</label><textarea id="doc-paste-text" rows="8" placeholder="Paste your text here…"></textarea></div>
+      </div>
+    </div>
+
+    <!-- URL tab -->
+    <div class="tab-panel" id="tab-url">
+      <div class="fg wide" style="width:100%"><label>URL to scrape</label><input id="doc-url" placeholder="https://docs.example.com/page" style="width:100%" /></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">The gateway will fetch the URL and extract readable text.</div>
+    </div>
+
+    <!-- File upload tab -->
+    <div class="tab-panel" id="tab-upload">
+      <div class="form-row" style="flex-direction:column;gap:8px">
+        <div class="fg wide"><label>Title (optional)</label><input id="doc-upload-title" placeholder="Defaults to filename" /></div>
+        <div class="fg wide"><label>File (PDF, TXT, MD, CSV, JSON…)</label><input type="file" id="doc-file" accept=".pdf,.txt,.md,.csv,.json,.html,.xml,.rst" style="width:100%;padding:4px 0;border:none;background:none;color:var(--text)" /></div>
+      </div>
+    </div>
+
+    <div class="form-err" id="doc-err" style="margin-top:10px"></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="btn primary" id="doc-submit-btn" onclick="submitDoc()">Add Document</button>
+      <button class="btn" onclick="closeDocModal()">Cancel</button>
+    </div>
+
+    <!-- Query test panel -->
+    <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Test Query</div>
+      <div class="form-row">
+        <div class="fg" style="flex:1"><input id="q-input" placeholder="Ask something about this KB…" style="width:100%" onkeydown="if(event.key==='Enter')runQuery()" /></div>
+        <button class="btn" onclick="runQuery()">Search</button>
+      </div>
+      <div id="q-out" class="query-out" style="display:none"></div>
+    </div>
+  </div>
+</div>
 
 <script>
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -180,7 +301,11 @@ const fmtup = ms => { const s=Math.floor(ms/1000); if(s<60) return s+'s'; const 
 
 let logEntries = [];
 let backends = [];
+let kbs = [];
 let upStart = Date.now();
+let activeKbId = null;
+let activeTab = 'paste';
+let replacingDoc = null; // { id, source, sourceRef, title } when in replace mode
 
 // ── Health ─────────────────────────────────────────────
 async function loadHealth() {
@@ -236,12 +361,16 @@ function renderBackends() {
 
 function renderCatalog() {
   const connected = backends.filter(b=>b.status==='connected'&&b.tools?.length>0);
-  const total = backends.reduce((s,b)=>s+(b.tools?.length??0),0);
+  const backendToolCount = backends.reduce((s,b)=>s+(b.tools?.length??0),0);
+  const ragToolCount = kbs.length;
+  const total = backendToolCount + ragToolCount;
   document.getElementById('tool-cnt').textContent = total;
   document.getElementById('h-tools').textContent = total;
   const cat = document.getElementById('catalog');
-  if (!connected.length) { cat.innerHTML='<div class="empty">Connect backends to see available tools.</div>'; return; }
-  cat.innerHTML = connected.map(b=>`
+
+  const parts = [];
+  for (const b of connected) {
+    parts.push(`
 <details class="bt">
   <summary>
     <span class="dot ok"></span>
@@ -255,7 +384,32 @@ function renderCatalog() {
       ${t.description?`<div class="tool-d">${esc(t.description)}</div>`:''}
     </div>`).join('')}
   </div>
-</details>`).join('');
+</details>`);
+  }
+
+  for (const kb of kbs) {
+    parts.push(`
+<details class="bt">
+  <summary>
+    <span class="dot ok" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></span>
+    <span class="bt-name">${esc(kb.name)}</span>
+    <span class="badge" style="margin-left:8px">1</span>
+    <span style="margin-left:auto;color:var(--muted);font-size:11px">rag / ${kb.chunkCount} chunks</span>
+  </summary>
+  <div class="tools-list">
+    <div class="tool-item">
+      <div class="tool-n">rag__${esc(kb.id)}</div>
+      <div class="tool-d">${esc(kb.description || 'Search this knowledge base')}</div>
+    </div>
+  </div>
+</details>`);
+  }
+
+  if (!parts.length) {
+    cat.innerHTML = '<div class="empty">Connect backends or create knowledge bases to see available tools.</div>';
+  } else {
+    cat.innerHTML = parts.join('');
+  }
 }
 
 // ── Backends actions ────────────────────────────────────
@@ -293,6 +447,244 @@ async function removeBackend(name) {
 async function reconnect(name) {
   await fetch(`/api/backends/${encodeURIComponent(name)}/reconnect`,{method:'POST'});
   await loadBackends();
+}
+
+// ── RAG ────────────────────────────────────────────────
+async function loadKbs() {
+  try {
+    const r = await fetch('/api/rag/kbs');
+    kbs = await r.json();
+    renderKbs();
+  } catch {}
+}
+
+function renderKbs() {
+  document.getElementById('rag-cnt').textContent = kbs.length;
+  const grid = document.getElementById('rag-grid');
+  if (!kbs.length) {
+    grid.innerHTML = '<div class="empty">No knowledge bases. Click + New KB to create one.</div>';
+    renderCatalog();
+    return;
+  }
+  grid.innerHTML = kbs.map(kb => `
+<div class="rag-card" id="kbc-${esc(kb.id)}">
+  <div class="rag-card-hdr">
+    <span class="rag-card-name">${esc(kb.name)}</span>
+  </div>
+  ${kb.description?`<div class="rag-card-desc">${esc(kb.description)}</div>`:''}
+  <div class="rag-tool-name">rag__${esc(kb.id)}</div>
+  <div class="rag-card-meta">
+    <span>docs <b id="kbc-docs-${esc(kb.id)}">${kb.docCount}</b></span>
+    <span>chunks <b id="kbc-chunks-${esc(kb.id)}">${kb.chunkCount}</b></span>
+    <span>created <b>${fmts(kb.createdAt)}</b></span>
+  </div>
+  <div class="card-actions">
+    <button class="btn sm primary" onclick="openDocModal('${esc(kb.id)}','${esc(kb.name)}')">+ Add Docs</button>
+    <button class="btn sm danger" onclick="deleteKb('${esc(kb.id)}','${esc(kb.name)}')">Delete KB</button>
+  </div>
+  <div class="doc-list" id="kbc-doclist-${esc(kb.id)}"></div>
+</div>`).join('');
+  for (const kb of kbs) loadDocList(kb.id);
+  renderCatalog();
+}
+
+async function loadDocList(kbId) {
+  try {
+    const r = await fetch(`/api/rag/kbs/${encodeURIComponent(kbId)}/docs`);
+    const docs = await r.json();
+    const el = document.getElementById(`kbc-doclist-${kbId}`);
+    if (!el) return;
+    if (!docs.length) { el.innerHTML = '<span style="color:var(--muted);font-size:11px">No documents yet.</span>'; return; }
+    el.innerHTML = docs.map(d => `
+<div class="doc-item">
+  <span class="doc-item-src">${esc(d.source)}</span>
+  <span class="doc-item-title" title="${esc(d.sourceRef)}">${esc(d.title)}</span>
+  <span class="doc-item-chunks">${d.chunkCount}c</span>
+  <button class="btn sm" style="padding:1px 5px;font-size:10px" title="Replace content" onclick="openReplaceModal('${esc(kbId)}',${JSON.stringify(d).replace(/'/g,'&#39;')})">↺</button>
+  <button class="btn sm danger" style="padding:1px 5px;font-size:10px" onclick="removeDoc('${esc(kbId)}','${esc(d.id)}','${esc(d.title)}')">✕</button>
+</div>`).join('');
+  } catch {}
+}
+
+function toggleRagForm() {
+  const f = document.getElementById('rag-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('rf-id').focus();
+  document.getElementById('rag-form-err').textContent = '';
+}
+
+async function createKb() {
+  const id = document.getElementById('rf-id').value.trim();
+  const name = document.getElementById('rf-name').value.trim();
+  const description = document.getElementById('rf-desc').value.trim();
+  const errEl = document.getElementById('rag-form-err');
+  if (!id || !name) { errEl.textContent = 'ID and name are required'; return; }
+  errEl.textContent = '';
+  try {
+    const r = await fetch('/api/rag/kbs', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, name, description}) });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Failed'; return; }
+    document.getElementById('rf-id').value = '';
+    document.getElementById('rf-name').value = '';
+    document.getElementById('rf-desc').value = '';
+    toggleRagForm();
+    await loadKbs();
+  } catch(e) { errEl.textContent = 'Network error: ' + e.message; }
+}
+
+async function deleteKb(id, name) {
+  if (!confirm(`Delete knowledge base "${name}" and all its documents?`)) return;
+  await fetch(`/api/rag/kbs/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  await loadKbs();
+}
+
+async function removeDoc(kbId, docId, title) {
+  if (!confirm(`Remove document "${title}"?`)) return;
+  await fetch(`/api/rag/kbs/${encodeURIComponent(kbId)}/docs/${encodeURIComponent(docId)}`, { method: 'DELETE' });
+  await loadKbs();
+}
+
+// ── Doc modal ──────────────────────────────────────────
+function openDocModal(kbId, kbName) {
+  activeKbId = kbId;
+  replacingDoc = null;
+  document.getElementById('modal-title').textContent = `Add Document → ${kbName}`;
+  document.getElementById('doc-submit-btn').textContent = 'Add Document';
+  document.getElementById('add-doc-modal').classList.remove('hidden');
+  document.getElementById('doc-err').textContent = '';
+  document.getElementById('q-out').style.display = 'none';
+  document.getElementById('replace-banner').style.display = 'none';
+  switchTabByName('paste');
+}
+
+function openReplaceModal(kbId, doc) {
+  activeKbId = kbId;
+  replacingDoc = doc;
+  document.getElementById('modal-title').textContent = `Replace Content`;
+  document.getElementById('doc-submit-btn').textContent = 'Replace Content';
+  document.getElementById('add-doc-modal').classList.remove('hidden');
+  document.getElementById('doc-err').textContent = '';
+  document.getElementById('q-out').style.display = 'none';
+
+  const banner = document.getElementById('replace-banner');
+  banner.style.display = 'block';
+  banner.textContent = `Replacing: "${doc.title}" (${doc.chunkCount} chunks)`;
+
+  // Pre-select the doc's original source tab and pre-fill URL if applicable
+  switchTabByName(doc.source === 'upload' ? 'upload' : doc.source === 'url' ? 'url' : 'paste');
+  if (doc.source === 'url') document.getElementById('doc-url').value = doc.sourceRef;
+  if (doc.source === 'paste') document.getElementById('doc-paste-title').value = doc.title;
+}
+
+function closeDocModal() {
+  document.getElementById('add-doc-modal').classList.add('hidden');
+  activeKbId = null;
+  replacingDoc = null;
+  document.getElementById('doc-paste-title').value = '';
+  document.getElementById('doc-paste-text').value = '';
+  document.getElementById('doc-url').value = '';
+  document.getElementById('doc-upload-title').value = '';
+  document.getElementById('doc-file').value = '';
+  document.getElementById('q-input').value = '';
+  document.getElementById('q-out').style.display = 'none';
+  document.getElementById('replace-banner').style.display = 'none';
+}
+
+function switchTabByName(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tab}"]`)?.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function switchTab(ev, tab) {
+  switchTabByName(tab);
+  ev.target.classList.add('active');
+}
+
+async function submitDoc() {
+  const errEl = document.getElementById('doc-err');
+  const btn = document.getElementById('doc-submit-btn');
+  const isReplace = replacingDoc !== null;
+  errEl.textContent = '';
+  errEl.style.color = '';
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>${isReplace ? 'Replacing…' : 'Ingesting…'}`;
+
+  try {
+    const fd = new FormData();
+    if (activeTab === 'paste') {
+      const title = document.getElementById('doc-paste-title').value.trim();
+      const text = document.getElementById('doc-paste-text').value.trim();
+      if (!text) { errEl.textContent = 'Text is required'; return; }
+      fd.append('source', 'paste');
+      fd.append('title', title || 'Untitled');
+      fd.append('text', text);
+    } else if (activeTab === 'url') {
+      const url = document.getElementById('doc-url').value.trim();
+      if (!url) { errEl.textContent = 'URL is required'; return; }
+      fd.append('source', 'url');
+      fd.append('url', url);
+    } else {
+      const file = document.getElementById('doc-file').files[0];
+      const title = document.getElementById('doc-upload-title').value.trim();
+      if (!file) { errEl.textContent = 'File is required'; return; }
+      fd.append('source', 'upload');
+      fd.append('title', title || file.name);
+      fd.append('file', file);
+    }
+
+    const url = isReplace
+      ? `/api/rag/kbs/${encodeURIComponent(activeKbId)}/docs/${encodeURIComponent(replacingDoc.id)}`
+      : `/api/rag/kbs/${encodeURIComponent(activeKbId)}/docs`;
+    const method = isReplace ? 'PATCH' : 'POST';
+
+    const r = await fetch(url, { method, body: fd });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Failed'; return; }
+
+    errEl.style.color = 'var(--green)';
+    errEl.textContent = isReplace
+      ? `✓ Replaced "${d.doc.title}" (${d.doc.chunkCount} chunks)`
+      : `✓ Added "${d.doc.title}" (${d.doc.chunkCount} chunks)`;
+    setTimeout(() => { errEl.textContent = ''; errEl.style.color = ''; }, 3000);
+
+    if (activeTab === 'paste') { document.getElementById('doc-paste-title').value=''; document.getElementById('doc-paste-text').value=''; }
+    else if (activeTab === 'url') { if (!isReplace) document.getElementById('doc-url').value=''; }
+    else { document.getElementById('doc-upload-title').value=''; document.getElementById('doc-file').value=''; }
+
+    if (isReplace) { replacingDoc = null; document.getElementById('replace-banner').style.display='none'; }
+    await loadKbs();
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.color = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = isReplace ? 'Replace Content' : 'Add Document';
+  }
+}
+
+async function runQuery() {
+  const query = document.getElementById('q-input').value.trim();
+  if (!query || !activeKbId) return;
+  const outEl = document.getElementById('q-out');
+  outEl.style.display = 'block';
+  outEl.innerHTML = '<span class="spinner"></span>Searching…';
+  try {
+    const r = await fetch(`/api/rag/kbs/${encodeURIComponent(activeKbId)}/query`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ query, top_k: 5 })
+    });
+    const d = await r.json();
+    if (!r.ok) { outEl.textContent = 'Error: ' + (d.error || 'Unknown'); return; }
+    if (!d.results.length) { outEl.textContent = 'No results found.'; return; }
+    outEl.innerHTML = d.results.map((res, i) => `
+<div class="query-result">
+  <div class="query-result-hdr">[${i+1}] ${esc(res.docTitle)} <span style="color:var(--muted);font-weight:400">(score: ${res.score.toFixed(3)})</span></div>
+  <div class="query-result-text">${esc(res.text)}</div>
+</div>`).join('');
+  } catch(e) { outEl.textContent = 'Error: ' + e.message; }
 }
 
 // ── Log ─────────────────────────────────────────────────
@@ -348,9 +740,10 @@ function startSSE() {
   const d=await r.json();
   logEntries=(d.entries||[]).slice(-100);
   renderLog();
-  await loadBackends();
+  await Promise.all([loadBackends(), loadKbs()]);
   startSSE();
-  setInterval(loadBackends,15000);
+  setInterval(loadBackends, 15000);
+  setInterval(loadKbs, 30000);
 })();
 </script>
 </body>
