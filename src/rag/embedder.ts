@@ -10,7 +10,7 @@ let _pipeline: Awaited<ReturnType<typeof pipeline>> | null = null;
 let _loading: Promise<Awaited<ReturnType<typeof pipeline>>> | null = null;
 
 export function setCacheDir(dir: string): void {
-  env.cacheDir = join(dir, 'models');
+  env.cacheDir = process.env.MODEL_CACHE_DIR ?? join(dir, 'models');
 }
 
 export async function warmup(): Promise<void> {
